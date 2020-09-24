@@ -1,0 +1,8 @@
+authenticationservice:
+  url: https://smarthealth-subhi.lg-apps.com/
+  username: subhi
+  password: C7KrKxFfu3uUy2Kw
+  database: medic
+  accept: application/json
+  userPrefix: org.couchdb.user
+  

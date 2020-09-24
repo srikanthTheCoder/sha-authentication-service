@@ -1,0 +1,27 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /auth
+  
+spring:
+  profiles:
+    active:
+    - dev
+  
+management:
+  endpoint:
+    health:
+      enabled: true
+    metrics:
+      enabled: true
+  security:
+      enabled: true
+   
+logging:
+  level:
+    org.springboot.web: ERROR
+    com.lg: DEBUG
+  pattern: 
+    console: '%d{yyyy-MM-dd HH:mm:ss} - %msg%n'
+    file: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+  file: ${java.io.tmpdir}/authentication-service.log
