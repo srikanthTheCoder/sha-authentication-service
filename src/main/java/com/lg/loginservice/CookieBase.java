@@ -33,6 +33,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.lg.constant.AuthenticationConstants;
+import com.lg.constant.ErrorMessageConstant;
+import com.lg.enums.ErrorCode;
 import com.lg.model.UserResponseDTO;
 import com.lg.service.impl.AuthenticationServiceImpl;
 import com.lg.util.HttpUtil;
@@ -119,9 +121,9 @@ public class CookieBase {
 			logger.info("redirecting the URL");
 			return getRedirectUrl(mapper.readTree(response.getBody()), redirect);
 		} catch (JsonMappingException ex) {
-			ex.printStackTrace();
+			logger.error(ErrorMessageConstant.LOGIN_ISSUE);
 		} catch (JsonProcessingException e) {
-			e.printStackTrace();
+			logger.error(ErrorMessageConstant.LOGIN_ISSUE);
 		}
 		return resCookie;
 	}
@@ -237,7 +239,7 @@ public class CookieBase {
 		try {
 			rolesList = reader.readValue(value);
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			logger.error(ErrorMessageConstant.LOGIN_ISSUE);
 		}
 		return rolesList != null ? rolesList.contains(role) : Boolean.FALSE;
 	}
