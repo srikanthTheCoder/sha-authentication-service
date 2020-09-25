@@ -94,43 +94,33 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		requestDTO.setPassword(request.getPassword());
 		HttpEntity<RequestDTO> entity = new HttpEntity<>(requestDTO, headers);
 		redirect = redirect != null ? redirect : "";
-		System.out.println("1111111111111111");
-
 		try {
 			postResponseEntity = getLoginSessionDetails(url, entity);
-			System.out.println("postResponseEntity : " + postResponseEntity);
 			String cookie = cookieBase.getCookieSession(postResponseEntity);
-			System.out.println("cookie" + cookie);
 			if (cookie == null) {
 				logger.debug("URL {}", url);
 				throw new SessionUnAuthorisedException(ErrorCode.SESSION_UNAUTHORIZED_ERROR);
 			}
 			logger.info("Session created");
-			System.out.println("Session created");
-
 			headers.add("Cookie", cookie);
-			System.out.println("headers :" + headers);
 			String getUserctxResponse = getSessionDetails(cookie);
-			System.out.println("Session created **********");
 			ResponseEntity<String> getUserctxResponseEntity = new ResponseEntity<>(getUserctxResponse, HttpStatus.OK);
 			JsonNode sessionnode;
-			System.out.println("************Session created **********");
 			sessionnode = objectMapper.readTree(getUserctxResponse);
 			headers.add("X-Medic-User", sessionnode.get("userCtx").get("name").asText());
 			httpResponse.setContentType("text/html");
 			redirectUrl = cookieBase.setCookie(getUserctxResponseEntity, httpResponse, httpRequest, redirect);
 			httpResponse.sendRedirect(serviceUrl + redirectUrl);
 		} catch (Exception ex) {
-			System.out.println("Exception");
 			throw new SessionUnAuthorisedException(ErrorCode.SESSION_UNAUTHORIZED_ERROR);
 		}
 		return httpResponse;
 	}
 	
 	
+	
 	public ResponseEntity<String> getLoginSessionDetails(String url,HttpEntity<RequestDTO> entity){
 		ResponseEntity<String> postResponseEntity;
-		System.out.println("url : " + url + "entity : " + entity);
 		postResponseEntity = restTemplate.postForEntity(url, entity, String.class);
 		if (postResponseEntity.getStatusCodeValue() != 200) {
 			throw new SessionUnAuthorisedException(ErrorCode.SESSION_UNAUTHORIZED_ERROR);
@@ -223,15 +213,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		authenticationRepository.add(settings);
 		JsonNode response = authenticationRepository.get(settingId);
 		JsonNode result = response.get(AuthenticationConstants.REV_ID);
-		result = ((ObjectNode) result).put(AuthenticationConstants.DOC_ID, settingId);
-		return result;
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode resultNode = mapper.createObjectNode();
+		resultNode.put(AuthenticationConstants.REV_ID, result.asText());
+		resultNode.put(AuthenticationConstants.DOC_ID, settingId);
+		return resultNode;
 	}
 	
 
 	/**
 	 * To check user details are in the medic/user database for admin user
 	 */
-	public void validateNewUserNameForDb(String username, String db) {
+	public JsonNode validateNewUserNameForDb(String username, String db) {
 		logger.info("check the user details - service layer");
 		couchDbConnector = couchDbInstance.createConnector(db, true);
 		authenticationRepository = new AuthenticationRepository(couchDbConnector);
@@ -239,6 +232,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		if (response.get(AuthenticationConstants.DOC_ID) != null) {
 			throw new UserAlreadyTakenException(ErrorCode.USERNAME_TAKEN);
 		} 
+		return response;
 	}
 	
 

@@ -7,7 +7,7 @@ public class AuthenticationConstants implements Serializable {
 	public static final String DOC_ID = "_id";
 	public static final String REV_ID = "_rev";
 	public static final String VALIDATE_USERNAME = "/^[a-z0-9_-]+$/";
-	public static final String ONLINE_ROLE="mm-online";
+	public static final String ONLINE_ROLE = "mm-online";
 	public static final String SESSION_DATABASE = "_session";
 	public static final String USER_CONTEXT = "userCtx";
 	public static final String NAME = "name";
@@ -41,7 +41,7 @@ public class AuthenticationConstants implements Serializable {
 	public static final String USER_NAME = "username";
 	public static final String MEDIC_DB = "medic";
 	public static final String CODE = "code";
-	public static final String MEDIC_SETTIGS ="medic/settings";
+	public static final String MEDIC_SETTIGS = "medic/settings";
 	public static final String COOKIE_OPTION = "; Secure; SameSite=lax";
 	public static final String SET_COOKIE = "Set-Cookie";
 	public static final String LOCALE = "locale";
@@ -61,5 +61,8 @@ public class AuthenticationConstants implements Serializable {
 	public static final String COOKIE = "Cookie";
 	public static final String MISSING = "missing";
 	public static final String REDIRECT = "redirect";
-	public static final String USERSETTIGS="user-settings";
+	public static final String USERSETTIGS = "user-settings";
+
+
+
 }

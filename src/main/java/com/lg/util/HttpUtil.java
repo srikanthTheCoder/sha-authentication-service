@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import com.lg.constant.AuthenticationConstants;
 import com.lg.enums.ErrorCode;
-import com.lg.exception.SessionUnAuthorisedException;
 import com.lg.exception.UnauthorizedException;
 import com.lg.model.AuthenticationDTO;
 
@@ -56,8 +55,11 @@ public class HttpUtil {
 			cookie.setMaxAge(31536000);
 			cookie.setPath(AuthenticationConstants.PATH_SEPERATOR);
 			cookie.setSecure(true);
+			cookie.setHttpOnly(false);
+			return cookie;
+
 		} catch (UnsupportedEncodingException e) {
-			throw new SessionUnAuthorisedException(ErrorCode.SESSION_UNAUTHORIZED_ERROR);
+			e.printStackTrace();
 		}
 		return cookie;
 	}
