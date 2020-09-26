@@ -1,15 +1,12 @@
 package com.lg.service.impl;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.util.Arrays;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,6 +27,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -50,7 +48,7 @@ import com.lg.model.RequestDTO;
 import com.lg.repository.AuthenticationRepository;
 import com.lg.util.HttpUtil;
 
-@ExtendWith({ MockitoExtension.class })
+@ExtendWith({ MockitoExtension.class, SpringExtension.class })
 @MockitoSettings(strictness = Strictness.LENIENT)
 class AuthenticationServiceImplTest {
 
@@ -61,7 +59,7 @@ class AuthenticationServiceImplTest {
 	private AuthenticationRepository authenticationRepository;
 
 	@Mock
-	HttpServletResponse httpResponse;
+	HttpServletResponse expectedhttpResponse;
 
 	@Mock
 	HttpServletRequest httpRequest;
@@ -80,10 +78,11 @@ class AuthenticationServiceImplTest {
 
 	public MockMvc mockMvc;
 	private HttpUtil httpUtil;
-
+	private ObjectMapper mapper;
 	@BeforeEach
 	void setUp() throws Exception {
-		authenticationServiceImpl = new AuthenticationServiceImpl();
+		mapper = new ObjectMapper();
+		authenticationServiceImpl = new AuthenticationServiceImpl(authenticationRepository, mapper, restTemplate);
 		mockMvc = MockMvcBuilders.standaloneSetup(authenticationServiceImpl).build();
 		httpUtil = new HttpUtil();
 		ReflectionTestUtils.setField(authenticationServiceImpl, "serviceUrl", "https://smarthealth-subhi.lg-apps.com/");
@@ -117,23 +116,19 @@ class AuthenticationServiceImplTest {
 
 	}
 	
-	// @Test
+	@Test
 	void testAddLoginDetails_throwSetssionUnAuthorisedException1() throws IOException {
+		HttpServletResponse actualhttpResponse;
 		String url = authenticationServiceImpl.serviceUrl + AuthenticationConstants.SESSION_DATABASE;
 		String redirect = "";
 		String cookie = "AuthSession=c3ViaGk6NUY2Q0RCMzY6A5BraOcQxJ8T9l1iw9sMUe0Wyuw; Version=1; Expires=Fri, 24-Sep-2021 17:45:26 GMT; Max-Age=31536000; Path=/; HttpOnly";
-		Cookie[] cookies = new Cookie[] { new Cookie("Set-Cookie", cookie) };
-		String postResponse = "{\r\n" + "    \"ok\": true,\r\n" + "    \"name\": \"subhi\",\r\n"
-				+ "    \"roles\": [\r\n" + "        \"_admin\",\r\n" + "        \"national_admin\",\r\n"
-				+ "        \"mm-online\"\r\n" + "    ]\r\n" + "}";
-		String getResponse = "{\r\n" + "  \"ok\": true,\r\n" + "  \"userCtx\": {\r\n" + "    \"name\": \"subhi\",\r\n"
+		String response = "{\r\n" + "  \"ok\": true,\r\n" + "  \"userCtx\": {\r\n" + "    \"name\": \"subhi\",\r\n"
 				+ "    \"roles\": [\r\n" + "      \"_admin\",\r\n" + "      \"national_admin\",\r\n"
 				+ "      \"mm-online\"\r\n" + "    ]\r\n" + "  },\r\n" + "  \"info\": {\r\n"
 				+ "    \"authentication_db\": \"_users\",\r\n" + "    \"authentication_handlers\": [\r\n"
 				+ "      \"cookie\",\r\n" + "      \"default\"\r\n" + "    ],\r\n"
 				+ "    \"authenticated\": \"cookie\"\r\n" + "  }\r\n" + "}";
 		HttpHeaders headers = new HttpHeaders();
-		HttpHeaders headers1 = new HttpHeaders();
 		HttpUtil httpUtil = new HttpUtil();
 		AuthenticationDTO request = new AuthenticationDTO();
 		request.setPassword("test");
@@ -142,41 +137,29 @@ class AuthenticationServiceImplTest {
 		requestDTO.setName(request.getUser());
 		requestDTO.setPassword(request.getPassword());
 		headers.add("Authorization", httpUtil.getBasicAuth(request));
-		headers1.addAll("Set-Cookie", Arrays.asList(cookie));
 		HttpEntity<RequestDTO> entity = new HttpEntity<>(requestDTO, headers);
-		ResponseEntity<String> postResponseEntity = ResponseEntity.status(HttpStatus.OK).headers(headers1).build();
-		when(restTemplate.postForEntity(url, entity, String.class))
-						.thenReturn(new ResponseEntity<>(postResponse, HttpStatus.OK));
-		Mockito.when(authenticationServiceImpl.getLoginSessionDetails(url, entity))
-				.thenReturn(new ResponseEntity<>(postResponse, HttpStatus.OK));
-		
-		when(authenticationServiceImpl.addLoginDetails(request, httpResponse, httpRequest, redirect)).thenReturn(httpResponse);
+		HttpEntity<String> getEntity = httpUtil.getHttpEntity(cookie);
+		ResponseEntity<String> postResponseEntity = new ResponseEntity<String>(response, HttpStatus.OK);
+		ResponseEntity<String> getResponseEntity = new ResponseEntity<String>(response, HttpStatus.OK);
 
-		assertThat(authenticationServiceImpl.addLoginDetails(request, httpResponse, httpRequest, redirect)).isEqualTo(httpResponse);
-//		RequestDTO requestDTO = new RequestDTO();
-//		requestDTO.setName(request.getUser());
-//		requestDTO.setPassword(request.getPassword());
-//		HttpEntity<RequestDTO> entity = new HttpEntity<>(requestDTO, headers);
-//
-//		ResponseEntity<String> postResponseEntity = ResponseEntity.status(HttpStatus.OK).headers(headers1).build();
-//
-//		when(restTemplate.postForEntity(url, entity, String.class)).thenReturn(postResponseEntity);
-//		when(cookieBase.getCookieSession(postResponseEntity)).thenReturn(cookie);
-//		headers.add("Cookie", cookie);
-//		//when(authenticationServiceImpl.getSessionDetails(cookie)).thenReturn(getResponse);
-//		ResponseEntity<String> getUserctxResponseEntity = new ResponseEntity<>(getResponse, HttpStatus.OK);
-//		JsonNode sessionnode;
-//		ObjectMapper objectMapper = new ObjectMapper();
-//		sessionnode = objectMapper.readTree(getResponse);
-//		headers.add("X-Medic-User", sessionnode.get("userCtx").get("name").asText());
-//		httpResponse.setContentType("text/html");
-//		when(cookieBase.setCookie(getUserctxResponseEntity, httpResponse, httpRequest, redirect)).thenReturn("/");
-//		httpResponse.sendRedirect("/");
-//	
-//		authenticationServiceImpl.addLoginDetails(request, httpResponse, httpRequest, redirect);
-//
-//
-//		assertEquals("text/html", httpResponse.getContentType());
+//		ResponseEntity<String> getUserctxResponseEntity = new ResponseEntity<>(getUserctxResponse, HttpStatus.OK);
+		expectedhttpResponse.setContentType("text/html");
+		when(restTemplate.postForEntity(url, entity, String.class))
+				.thenReturn(postResponseEntity);
+		when(cookieBase.getCookieSession(postResponseEntity)).thenReturn(cookie);
+
+		when(restTemplate.exchange(url, HttpMethod.GET, getEntity, String.class))
+				.thenReturn(new ResponseEntity<>(response, HttpStatus.OK));
+
+		when(cookieBase.setCookie(getResponseEntity, expectedhttpResponse, httpRequest, redirect)).thenReturn("");
+
+		actualhttpResponse = authenticationServiceImpl.addLoginDetails(request, expectedhttpResponse, httpRequest,
+				redirect);
+		assertEquals(expectedhttpResponse.getStatus(), actualhttpResponse.getStatus());
+	}
+
+	private void dummyMethod(String url, String redirect, HttpEntity<RequestDTO> entity,
+			String getResponse) {
 
 	}
 
@@ -200,7 +183,7 @@ class AuthenticationServiceImplTest {
 		when(restTemplate.postForEntity(url, entity, String.class)).thenReturn(expectedResponse);
 
 		Exception exception = assertThrows(SessionUnAuthorisedException.class, () -> {
-			authenticationServiceImpl.addLoginDetails(request, httpResponse, httpRequest, redirect);
+			authenticationServiceImpl.addLoginDetails(request, expectedhttpResponse, httpRequest, redirect);
 		});
 		assertEquals("Not logged in", exception.getMessage());
 

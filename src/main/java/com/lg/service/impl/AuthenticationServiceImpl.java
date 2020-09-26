@@ -64,14 +64,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	@Autowired
 	private CookieBase cookieBase;
 	@Autowired
-	private RestTemplate restTemplate;
-	@Autowired
-	ObjectMapper objectMapper;
-	@Autowired
 	private CouchDbInstance couchDbInstance;
-	@Autowired
-	private AuthenticationRepository authenticationRepository;
 
+	private AuthenticationRepository authenticationRepository;
+	private ObjectMapper objectMapper;
+	private RestTemplate restTemplate;
+
+	@Autowired
+	public AuthenticationServiceImpl(AuthenticationRepository authenticationRepository, ObjectMapper objectMapper,
+			RestTemplate restTemplate) {
+		this.authenticationRepository = authenticationRepository;
+		this.objectMapper = objectMapper;
+		this.restTemplate = restTemplate;
+	}
 
 	@PostConstruct
 	public void initialise() {
@@ -111,6 +116,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 			httpResponse.setContentType("text/html");
 			redirectUrl = cookieBase.setCookie(getUserctxResponseEntity, httpResponse, httpRequest, redirect);
 			httpResponse.sendRedirect(serviceUrl + redirectUrl);
+			httpResponse.setStatus(302);
 		} catch (Exception ex) {
 			throw new SessionUnAuthorisedException(ErrorCode.SESSION_UNAUTHORIZED_ERROR);
 		}
@@ -121,6 +127,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	
 	public ResponseEntity<String> getLoginSessionDetails(String url,HttpEntity<RequestDTO> entity){
 		ResponseEntity<String> postResponseEntity;
+		System.out.println("url " + url + "entity : " + entity);
 		postResponseEntity = restTemplate.postForEntity(url, entity, String.class);
 		if (postResponseEntity.getStatusCodeValue() != 200) {
 			throw new SessionUnAuthorisedException(ErrorCode.SESSION_UNAUTHORIZED_ERROR);
@@ -139,6 +146,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		String url = serviceUrl + AuthenticationConstants.SESSION_DATABASE;
 	
 		HttpEntity<String> entity = httpUtil.getHttpEntity(cookie);
+		System.out.println(url + " : " + entity);
 		ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
 		if (response.getStatusCodeValue() != 200) {
 			throw new UnauthorizedException(ErrorCode.UNAUTHORIZED_ERROR);
@@ -213,8 +221,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		authenticationRepository.add(settings);
 		JsonNode response = authenticationRepository.get(settingId);
 		JsonNode result = response.get(AuthenticationConstants.REV_ID);
-		ObjectMapper mapper = new ObjectMapper();
-		ObjectNode resultNode = mapper.createObjectNode();
+		ObjectNode resultNode = objectMapper.createObjectNode();
 		resultNode.put(AuthenticationConstants.REV_ID, result.asText());
 		resultNode.put(AuthenticationConstants.DOC_ID, settingId);
 		return resultNode;

@@ -34,7 +34,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.lg.constant.AuthenticationConstants;
 import com.lg.constant.ErrorMessageConstant;
-import com.lg.enums.ErrorCode;
 import com.lg.model.UserResponseDTO;
 import com.lg.service.impl.AuthenticationServiceImpl;
 import com.lg.util.HttpUtil;
@@ -55,8 +54,6 @@ public class CookieBase {
 	CouchDbConnector couchDbConnector;
 	@Autowired
 	private CookieUser cookieUser;
-	@Autowired
-	private ObjectMapper mapper;
 	@Autowired
 	private HttpUtil httpUtil;
 	@Autowired
@@ -100,12 +97,12 @@ public class CookieBase {
 		JsonNode userctx;
 		try {
 			logger.info("UserCtx cookie");
-			setUserCtxCookie(mapper.readTree(response.getBody()), httpResponse);
-			userctx = cookieUser.getUserSettings(mapper.readTree(response.getBody()));
-			if (userctx == null && mapper.readTree(response.getBody()).get(AuthenticationConstants.USER_CONTEXT)
+			setUserCtxCookie(objectMapper.readTree(response.getBody()), httpResponse);
+			userctx = cookieUser.getUserSettings(objectMapper.readTree(response.getBody()));
+			if (userctx == null && objectMapper.readTree(response.getBody()).get(AuthenticationConstants.USER_CONTEXT)
 					.get(AuthenticationConstants.ROLES).has(AuthenticationConstants.ADMIN)) {
-				cookieUser.createAdmin(mapper.readTree(response.getBody()));
-				userctx = cookieUser.getUserSettings(mapper.readTree(response.getBody()));
+				cookieUser.createAdmin(objectMapper.readTree(response.getBody()));
+				userctx = cookieUser.getUserSettings(objectMapper.readTree(response.getBody()));
 			}
 
 			String lang = language(httpRequest.getLocale().getLanguage(),
@@ -113,13 +110,13 @@ public class CookieBase {
 					get(AuthenticationConstants.LOCALE).toString());
 			logger.debug("language {}",lang);
 			updateUserlanguageRequirement(
-					mapper.readTree(response.getBody()).get(AuthenticationConstants.USER_CONTEXT)
+					objectMapper.readTree(response.getBody()).get(AuthenticationConstants.USER_CONTEXT)
 							.get(AuthenticationConstants.NAME).asText(),
 					userctx != null ? userctx.get(AuthenticationConstants.LANGUAGE).asText() : "", lang);
 			JsonNode localeSetting = get(AuthenticationConstants.LOCALE);
 			setCookieDetails(AuthenticationConstants.LOCALE, localeSetting.asText(), httpResponse);
 			logger.info("redirecting the URL");
-			return getRedirectUrl(mapper.readTree(response.getBody()), redirect);
+			return getRedirectUrl(objectMapper.readTree(response.getBody()), redirect);
 		} catch (JsonMappingException ex) {
 			logger.error(ErrorMessageConstant.LOGIN_ISSUE);
 		} catch (JsonProcessingException e) {
@@ -233,7 +230,7 @@ public class CookieBase {
 	 * Check whether the user has the mentioned role like admin, national admin
 	 */	
 	public boolean checkUserRolesExist(JsonNode value, String role) {
-		ObjectReader reader = mapper.readerFor(new TypeReference<List<String>>() {
+		ObjectReader reader = objectMapper.readerFor(new TypeReference<List<String>>() {
 		});
 		List<String> rolesList = null;
 		try {
@@ -278,7 +275,7 @@ public class CookieBase {
 	public boolean hasPermission(JsonNode userctx, String permission) {
 		JsonNode roles = get("permissions");
 		JsonNode permissions = (roles.get(permission));
-		ArrayList<String> rolesList = mapper.convertValue(
+		ArrayList<String> rolesList = objectMapper.convertValue(
 				(userctx.get(AuthenticationConstants.USER_CONTEXT).get(AuthenticationConstants.ROLES)),
 				ArrayList.class);
 		List hasPermissions = rolesList.stream().filter(e -> checkUserRolesExist(permissions, e))

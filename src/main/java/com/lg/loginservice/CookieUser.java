@@ -148,11 +148,4 @@ public class CookieUser {
 		return  roleType.stream().toArray(String[] ::new);
 	}
 	
-
-	/**
-	 * To restrict illegal modification attempt
-	 */
-	public boolean illegalDataModificationAttempts(JsonNode data) {
-		return Arrays.asList(allowedRestrictedEditableFields).stream().allMatch(e -> data.has(e.toString()));
-	}
 }
